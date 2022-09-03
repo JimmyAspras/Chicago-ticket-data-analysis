@@ -116,13 +116,9 @@ Finally, in order to determine whether there may be any hidden relationships in 
 Through visualizations and statistical analysis, it has been established that there are several clear patterns in the data:
 
 -There are several intersections that are the source of a proportionally high number of tickets
-
 -There are zip codes that have been issued substantially more tickets than their neighbors
-
 -There are zip codes that are significantly more likely to pay or be able to pay their ticket than others
-
 -Time of day could be a meaningful predictor of tickets, but month is not
-
 -An unsupervised analysis was not able to find meaningful relationships among a handful of numeric variables
 
 This analysis raises some additional questions that were initially raised when ProPublica published their original article. Further research and analysis should be conducted to link zip codes to intersections and demographic data to driver zip codes to determine whether there are any groups that are being disproportionately harmed by red light traffic cameras.

@@ -115,18 +115,246 @@ Finally, in order to determine whether there may be any hidden relationships in 
 
 Through visualizations and statistical analysis, it has been established that there are several clear patterns in the data:
 
-There are several intersections that are the source of a proportionally high number of tickets
+-There are several intersections that are the source of a proportionally high number of tickets
 
-There are zip codes that have been issued substantially more tickets than their neighbors
+-There are zip codes that have been issued substantially more tickets than their neighbors
 
-There are zip codes that are significantly more likely to pay or be able to pay their ticket than others
+-There are zip codes that are significantly more likely to pay or be able to pay their ticket than others
 
-Time of day could be a meaningful predictor of tickets, but month is not
+-Time of day could be a meaningful predictor of tickets, but month is not
 
-An unsupervised analysis was not able to find meaningful relationships among a handful of numeric variables
+-An unsupervised analysis was not able to find meaningful relationships among a handful of numeric variables
 
 This analysis raises some additional questions that were initially raised when ProPublica published their original article. Further research and analysis should be conducted to link zip codes to intersections and demographic data to driver zip codes to determine whether there are any groups that are being disproportionately harmed by red light traffic cameras.
 
 Furthermore, the fact that there is a relationship between zip code and, possibly, ability to pay, the city should investigate alternative penalty structures for offending drivers (income based, percentage of car value, etc.), or possibly re-timing the lights to allow for a greater volume of drivers to traverse the intersections during peak hours.
 
 Finally, the intersections with the most tickets should be evaluated to determine if there are extenuating circumstances that cause outsized violations relative to others, such as higher traffic volume, shorter yellow light cycles, lack of left turn lane, etc. Some basic improvements could reduce the number of violations and improve the safety of the intersection.
+
+
+## R Code
+
+Zip code regression
+
+library(tidyverse)
+library(readr)
+
+options(max.print=50)
+tickets=read_csv("/Users/jimmyaspras/Challenge/chicago_camera_tickets_sample.csv")
+as_tibble(tickets)
+
+#Amount due by zip code analysis
+
+#Select columns relevant to the analysis
+
+tickets2<-tickets[c("issue_date","violation_location","license_plate_state","zipcode","fine_level1_amount",
+                    "fine_level2_amount","current_amount_due","total_payments",
+                    "ticket_queue","year","month","hour")]
+
+#Drop missing data
+
+tickets3<-na.omit(tickets2)
+
+#Since the data primarily pertains to Chicago, filter out offending drivers outside IL
+
+tickets4<-filter(tickets3,license_plate_state=="IL")
+
+#To reduce the size of the data set and to better focus in on the Chicago area, filter all zip codes with less than 1,500 violations
+
+#find and return zip codes with >1,500 violations
+
+violations<-count(tickets4,zipcode,sort=TRUE,name="max_violations")
+
+#Zip code 60016 was the closest to 15,000 total violations in the Tableau analysis with the full dataset, which corresponds with just about 1,500 in this sample set.
+
+violations2<-as.data.frame(violations)
+violations3<-filter(violations2,max_violations>1500)
+
+#Filter the dataset with the zipcode output in violations3
+
+tickets5<-semi_join(tickets4, violations3, by = "zipcode")
+
+#Create dummy variables for remaining zip codes
+
+library(fastDummies)
+dummies<-dummy_cols(tickets5$zipcode,
+                    remove_first_dummy=TRUE,
+                    ignore_na=TRUE)
+
+#Merge the dataframes
+
+amountdue_lmdata<-cbind(dummies,tickets5)
+
+#Drop columns irrelevant to the analysis
+
+amountdue_lmdata<-select(amountdue_lmdata,-c(".data","issue_date","violation_location","license_plate_state",
+                       "zipcode","fine_level1_amount","fine_level2_amount",
+                       "total_payments","ticket_queue","year","month","hour"))
+
+library(tidymodels)
+amountdue_lm = linear_reg() %>% 
+  set_engine("lm") %>% 
+  fit(current_amount_due ~ ., data = amountdue_lmdata)
+
+library(broom)
+cleanamountdue_lm<-tidy(amountdue_lm)
+arrange(cleanamountdue_lm,desc(estimate))
+
+par(mfrow=c(2,2))
+plot(amountdue_lm$fit)
+
+library(car)
+influencePlot(amountdue_lm$fit)
+
+
+Month regression
+
+#Tickets by month
+
+monthregdata<-tickets5
+monthregdata2<-monthregdata %>%
+  group_by(month,year) %>%
+  dplyr::summarise(ticket_count=n())
+
+monthreg = linear_reg() %>%  
+  set_engine("lm") %>% 
+  fit(ticket_count ~ month, data = monthregdata2)
+tidy(monthreg)
+
+#Model charts
+
+par(mfrow=c(2,2))
+plot(monthreg$fit)
+
+#Influence plot
+
+influencePlot(monthreg$fit)
+
+
+Hour regression model (and alternative transformations)
+
+#Tickets by hour
+
+hourdata<-tickets5
+
+#Create variable for day
+
+hourdata$issue_date<-format(as.Date(hourdata$issue_date,format="%Y-%m-%d"), format = "%d")
+as.numeric(hourdata$issue_date)
+
+hourregdata<-hourdata %>%
+  group_by(hour,issue_date,year) %>%
+  dplyr::summarise(ticket_count=n())
+
+as.factor(hourregdata$hour)
+
+#From the Tableau analysis, we know that tickets and hour have a nonlinear relationship and should therefore be transformed to perform the analysis
+
+hourregdatalog<-hourregdata
+hourregdatalog$ticket_count<-log(hourregdatalog$ticket_count,base=exp(1))
+
+hourreg = linear_reg() %>%  
+  set_engine("lm") %>% 
+  fit(ticket_count ~ hour, data = hourregdatalog)
+tidy(hourreg)
+
+#Model charts
+
+par(mfrow=c(2,2))
+plot(hourreg$fit)
+
+#Influence plot
+
+influencePlot(hourreg$fit)
+
+
+#Log10
+
+hourregdatalog10<-hourregdata
+hourregdatalog10$ticket_count<-log(hourregdatalog10$ticket_count,base=exp(10))
+
+hourreg10 = linear_reg() %>%  
+  set_engine("lm") %>% 
+  fit(ticket_count ~ hour, data = hourregdatalog10)
+tidy(hourreg10)
+
+#Model charts
+
+par(mfrow=c(2,2))
+plot(hourreg10$fit)
+
+#Influence plot
+
+influencePlot(hourreg10$fit)
+
+
+#SQRT
+
+hourregdatasqrt<-hourregdata
+hourregdatasqrt$ticket_count<-log(hourregdatasqrt$ticket_count)
+
+hourregsqrt = linear_reg() %>%  
+  set_engine("lm") %>% 
+  fit(ticket_count ~ hour, data = hourregdatasqrt)
+tidy(hourregsqrt)
+
+#Model charts
+
+par(mfrow=c(2,2))
+plot(hourregsqrt$fit)
+
+#Influence plot
+
+influencePlot(hourregsqrt$fit)
+
+
+
+#Reciprocal
+
+hourregdatarecip<-hourregdata
+hourregdatarecip$ticket_count<-(1/(hourregdatarecip$ticket_count))
+
+hourregrecip = linear_reg() %>%  
+  set_engine("lm") %>% 
+  fit(ticket_count ~ hour, data = hourregdatarecip)
+tidy(hourregrecip)
+
+#Model charts
+
+par(mfrow=c(2,2))
+plot(hourregrecip$fit)
+
+#Influence plot
+
+influencePlot(hourregrecip$fit)
+
+
+Unsupervised model
+
+#Unsupervised model
+
+tickets6<-tickets5[c("zipcode","current_amount_due","total_payments","month","hour")]
+
+#Convert and scale
+
+tickets6[] = lapply(tickets6, as.numeric) 
+tickets6 = scale(tickets6)
+
+#Build model
+
+ticketunsupmodel = kmeans(tickets6, 5, nstart = 10) 
+ticketunsupmodel
+
+#Cluster plot
+
+library(cluster) 
+library(fpc)
+par(mfrow=c(1,1))
+clusplot(tickets6, ticketunsupmodel$cluster, color = TRUE, shade = TRUE)
+
+#Cluster plot 2
+
+library(factoextra)
+fviz_cluster(ticketunsupmodel,data = tickets6, labelsize = 9, ellipse.type = "norm",
+             choose.vars = c("zipcode","current_amount_due","total_payments","month","hour")) + theme_minimal()
+

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-  The Chicago Tickets dataset published by ProPublic was initially part of a dataset collected to analyze how steep fines for parking tickets and the ways the laws surrounding them are enforced target black citizens in Chicago. This analysis will attempt to see if this could also be applicable to red light tickets.
+  The Chicago Tickets dataset published by ProPublica (https://www.propublica.org/datastore/dataset/chicago-parking-ticket-data) was initially part of a dataset collected to analyze how steep fines for parking tickets and the ways the laws surrounding them are enforced target black citizens in Chicago. This analysis will attempt to see if this could also be applicable to red light tickets.
   
   Red light cameras themselves are inherently impartial, however, an analysis could reveal problem intersections or zip codes that tend to see more violations or owe more than others. It is important to review this information and make adjustments as necessary, which could include a different fine structure based on income or re-timing traffic lights, among other options.
   

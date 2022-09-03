@@ -133,7 +133,7 @@ Finally, the intersections with the most tickets should be evaluated to determin
 
 
 ## R Code
-
+```
 Zip code regression
 
 library(tidyverse)
@@ -357,4 +357,4 @@ clusplot(tickets6, ticketunsupmodel$cluster, color = TRUE, shade = TRUE)
 library(factoextra)
 fviz_cluster(ticketunsupmodel,data = tickets6, labelsize = 9, ellipse.type = "norm",
              choose.vars = c("zipcode","current_amount_due","total_payments","month","hour")) + theme_minimal()
-
+```

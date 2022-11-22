@@ -48,8 +48,6 @@ Immediately, it appears as if there could be an error in this data. Further anal
 
 <img width="718" alt="image" src="https://user-images.githubusercontent.com/72087263/188253653-fb80b7a4-35f8-4c48-8118-c2af4f31ef33.png">
 
-<img width="706" alt="image" src="https://user-images.githubusercontent.com/72087263/188253567-f67b1742-cb1f-48d5-af92-734eb329a8c5.png">
-
 ## Models
 
 The preceding visualizations indicate some trends that should be investigated further. All analyses in R were conducted using the sample data set. This section seeks to determine if a model can be constructed to mathematically predict:
